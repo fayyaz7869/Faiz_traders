@@ -23,5 +23,10 @@ export const validateOrder = [
   body('items.*.qty', 'Item quantity must be a positive number.').isFloat({ gt: 0 }),
 ];
 
-    
+// --- FIX ADDED HERE ---
+// The missing 'validateLogin' function that adminRoutes.js is trying to import.
+// This adds a simple check to ensure the password is not empty.
+export const validateLogin = [
+  body('password', 'Password cannot be empty.').not().isEmpty(),
+];
 
