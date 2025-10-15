@@ -1,0 +1,7 @@
+.env
+node_modules
+client/node_modules
+google-key.json
+client/dist
+.log
+*.json
