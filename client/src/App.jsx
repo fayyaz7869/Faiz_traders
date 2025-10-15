@@ -1,15 +1,797 @@
+// import React, { useState, useReducer, useEffect, useCallback } from 'react';
+// import { createRoot } from 'react-dom/client';
+
+// // Load lucide-react icons for a clean look
+// import { ShoppingCart, User, Lock, Store, Zap, X, CheckCircle, Truck, RefreshCw, AlertTriangle, ListOrdered, IndianRupee } from 'lucide-react';
+
+// // --- Static Product Data ---
+// const PRODUCTS = [
+//   { id: 'aalu', name_en: 'Potato', name_hi: 'आलू', price: 20, unit: 'kg', image: '/images/potato.jpg' },
+//   { id: 'piyaz', name_en: 'Onion', name_hi: 'प्याज़', price: 30, unit: 'kg', image: '/images/onion.jpg' },
+//   { id: 'adrak', name_en: 'Ginger', name_hi: 'अदरक', price: 80, unit: 'kg', image: '/images/ginger.jpg' },
+//   { id: 'lasun', name_en: 'Garlic', name_hi: 'लहसुन', price: 70, unit: 'kg', image: '/images/garlic.jpg' }
+// ];
+
+// // --- Localization Map (T) ---
+// const T = {
+//   app_name: { en: 'Faiz Traders', hi: 'फैज़ ट्रेडर्स' },
+//   role: { en: 'Role', hi: 'भूमिका' },
+//   customer: { en: 'Customer', hi: 'ग्राहक' },
+//   admin: { en: 'Admin', hi: 'प्रबंधक' },
+//   language: { en: 'Language', hi: 'भाषा' },
+//   shop: { en: 'Shop', hi: 'खरीददारी' },
+//   view_cart: { en: 'View Cart', hi: 'कार्ट देखें' },
+//   admin_dashboard: { en: 'Admin Dashboard', hi: 'प्रबंधक डैशबोर्ड' },
+//   back_to_shop: { en: 'Back to Shop', hi: 'दुकान पर वापस जाएँ' },
+//   per_kg: { en: 'per kg', hi: 'प्रति किलो' },
+//   add_to_cart: { en: 'Add to Cart', hi: 'कार्ट में जोड़ें' },
+//   update_cart: { en: 'Update Cart', hi: 'कार्ट अपडेट करें' },
+//   total: { en: 'Total Amount', hi: 'कुल राशि' },
+//   empty_cart: { en: 'Your cart is empty. Please add some items!', hi: 'आपका कार्ट खाली है। कृपया कुछ आइटम जोड़ें!' },
+//   checkout: { en: 'Checkout', hi: 'खरीदें' },
+//   qty: { en: 'Qty', hi: 'मात्रा' },
+//   remove: { en: 'Remove', hi: 'हटाएँ' },
+//   customer_info: { en: 'Customer Information', hi: 'ग्राहक जानकारी' },
+//   full_name: { en: 'Full Name', hi: 'पूरा नाम' },
+//   phone_number: { en: 'Phone Number', hi: 'फ़ोन नंबर' },
+//   delivery_address: { en: 'Delivery Address', hi: 'डिलीवरी पता' },
+//   place_order: { en: 'Place Order', hi: 'ऑर्डर करें' },
+//   order_success: { en: 'Order Confirmed!', hi: 'ऑर्डर पक्का हो गया!' },
+//   order_id: { en: 'Your Order ID is', hi: 'आपका ऑर्डर ID है' },
+//   order_summary: { en: 'Order Summary', hi: 'ऑर्डर सारांश' },
+//   network_error: { en: 'Network Error! Please try again.', hi: 'नेटवर्क त्रुटि! कृपया पुनः प्रयास करें।' },
+//   fill_all_fields: { en: 'Please fill all required fields.', hi: 'कृपया सभी आवश्यक फ़ील्ड भरें।' },
+//   cart_empty_error: { en: 'Cannot checkout with an empty cart.', hi: 'खाली कार्ट के साथ चेकआउट नहीं किया जा सकता।' },
+//   invalid_phone: { en: 'Please enter a valid 10-digit phone number.', hi: 'कृपया एक मान्य 10-अंकीय फ़ोन नंबर दर्ज करें।' },
+//   admin_auth_title: { en: 'Admin Access Required', hi: 'प्रबंधक पहुँच आवश्यक' },
+//   admin_password: { en: 'Admin Password', hi: 'प्रबंधक पासवर्ड' },
+//   login: { en: 'Login', hi: 'लॉग इन करें' },
+//   logout: { en: 'Logout', hi: 'लॉग आउट' },
+//   password_incorrect: { en: 'Incorrect Password.', hi: 'गलत पासवर्ड।' },
+//   orders_retrieved: { en: 'Orders Retrieved', hi: 'ऑर्डर प्राप्त हुए' },
+//   status_new: { en: 'New', hi: 'नया' },
+// };
+
+// // --- Config and Constants ---
+// const ORDERS_ENDPOINT = '/api/orders'; 
+// const ADMIN_LOGIN_ENDPOINT = '/api/admin/login';
+// const ADMIN_VIEW_TOKEN_KEY = 'adminToken';
+// const MOCK_ADMIN_PASSWORD = 'password'; 
+
+// // --- Cart Reducer ---
+// const cartReducer = (state, action) => {
+//   switch (action.type) {
+//     case 'ADD_ITEM': {
+//       const { item, quantity } = action.payload;
+//       const existingItem = state.find(i => i.id === item.id);
+//       if (existingItem) {
+//         return state.map(i =>
+//           i.id === item.id ? { ...i, qty: quantity } : i
+//         ).filter(i => i.qty > 0);
+//       } else if (quantity > 0) {
+//         return [...state, { ...item, qty: quantity }];
+//       }
+//       return state.filter(i => i.qty > 0);
+//     }
+//     case 'BATCH_UPDATE_ITEMS': {
+//       const { items } = action.payload;
+//       // Replace the entire cart with the new quantities, filtering out zeros.
+//       return items.filter(item => item.qty > 0);
+//     }
+//     case 'REMOVE_ITEM':
+//       return state.filter(item => item.id !== action.payload.id);
+//     case 'CLEAR_CART':
+//       return [];
+//     default:
+//       return state;
+//   }
+// };
+
+// // --- Helper Functions ---
+// const calculateCartTotal = (cart) => {
+//   return cart.reduce((acc, item) => acc + (item.price * item.qty), 0);
+// };
+
+// const getLabel = (key, lang) => {
+//   if (!T[key]) return key;
+//   if (lang === 'en') return T[key].en;
+//   if (lang === 'hi') return T[key].hi;
+//   return `${T[key].en} / ${T[key].hi}`;
+// };
+
+// // --- Components ---
+// const CartItemCard = ({ item, dispatch, lang }) => {
+//   const [qty, setQty] = useState(item.qty);
+//   const subtotal = item.price * item.qty;
+
+//   const handleUpdate = () => {
+//     dispatch({ type: 'ADD_ITEM', payload: { item, quantity: qty } });
+//   };
+
+//   const handleRemove = () => {
+//     dispatch({ type: 'REMOVE_ITEM', payload: { id: item.id } });
+//   };
+
+//   return (
+//     <div className="flex items-center justify-between p-3 border-b last:border-b-0">
+//       <div className="flex-1 min-w-0">
+//         <p className="font-semibold text-lg text-gray-800">{item.name_en} / {item.name_hi}</p>
+//         <p className="text-sm text-gray-500">
+//           Price: ₹{item.price}/{item.unit}
+//         </p>
+//       </div>
+//       <div className="flex items-center space-x-2 text-sm">
+//         <input
+//           type="number"
+//           value={qty}
+//           onChange={(e) => setQty(Math.max(0, parseInt(e.target.value) || 0))}
+//           className="w-16 p-2 border rounded-md text-center text-gray-700"
+//           min="0"
+//         />
+//         <button
+//           onClick={handleUpdate}
+//           className="p-2 text-blue-600 hover:text-blue-800 transition duration-150"
+//         >
+//           <RefreshCw size={18} />
+//         </button>
+//         <button
+//           onClick={handleRemove}
+//           className="p-2 text-red-600 hover:text-red-800 transition duration-150"
+//         >
+//           <X size={18} />
+//         </button>
+//       </div>
+//       <p className="w-20 text-right font-medium text-lg">₹{subtotal.toFixed(2)}</p>
+//     </div>
+//   );
+// };
+
+// const ProductCard = ({ product, quantity, onQuantityChange, onAddToCart, lang }) => {
+//   return (
+//     <div className="bg-white p-5 rounded-xl shadow-lg hover:shadow-xl transition duration-300 border border-gray-100 flex flex-col justify-between">
+//       <img
+//         src={product.image}
+//         alt={product.name_en}
+//         className="w-full h-32 object-contain mb-4 rounded-lg bg-gray-100 p-2"
+//         onError={(e) => { e.target.onerror = null; e.target.src="https://placehold.co/100x100/cccccc/333333?text=Veggie" }}
+//       />
+//       <div>
+//         <h3 className="text-xl font-bold text-gray-800">{product.name_en} / <span className="text-green-600">{product.name_hi}</span></h3>
+//         <p className="text-3xl font-extrabold text-green-700 my-2 flex items-center">
+//           <IndianRupee size={20} className="mr-1"/>{product.price}
+//           <span className="text-sm text-gray-500 font-normal ml-1"> / {product.unit}</span>
+//         </p>
+//       </div>
+      
+//       <div className="mt-4 flex flex-col space-y-3">
+//         <label className="text-sm font-medium text-gray-600">
+//           {getLabel('qty', lang)} ({product.unit})
+//         </label>
+//         <input
+//           type="number"
+//           value={quantity}
+//           onChange={(e) => onQuantityChange(product.id, e.target.value)}
+//           className="w-full p-3 border border-gray-300 rounded-lg focus:ring-green-500 focus:border-green-500 text-lg"
+//           min="0"
+//           step="0.5"
+//         />
+//         <button
+//           onClick={() => onAddToCart(product.id)}
+//           className="w-full bg-green-600 text-white font-semibold py-3 px-4 rounded-xl shadow-md hover:bg-green-700 transition duration-200 flex items-center justify-center text-base"
+//         >
+//           <ShoppingCart size={18} className="mr-2" />
+//           {getLabel(quantity > 0 ? 'update_cart' : 'add_to_cart', lang)}
+//         </button>
+//       </div>
+//     </div>
+//   );
+// };
+
+// const Cart = ({ cart, dispatch, setView, lang }) => {
+//   const total = calculateCartTotal(cart);
+//   const cartIsEmpty = cart.length === 0;
+
+//   return (
+//     <div className="bg-white p-6 rounded-xl shadow-xl border border-gray-200">
+//       <h2 className="text-3xl font-bold text-gray-900 mb-6 flex items-center">
+//         <ShoppingCart size={24} className="mr-3 text-green-600" />
+//         {getLabel('view_cart', lang)}
+//       </h2>
+
+//       <div className="min-h-48 border rounded-lg overflow-hidden bg-gray-50">
+//         {cartIsEmpty ? (
+//           <p className="p-6 text-center text-gray-500 text-lg">{getLabel('empty_cart', lang)}</p>
+//         ) : (
+//           <div>
+//             {cart.map(item => (
+//               <CartItemCard key={item.id} item={item} dispatch={dispatch} lang={lang} />
+//             ))}
+//           </div>
+//         )}
+//       </div>
+
+//       <div className="mt-6 flex flex-col sm:flex-row justify-between items-center pt-4 border-t border-dashed">
+//         <p className="text-2xl font-extrabold text-gray-900">
+//           {getLabel('total', lang)}: ₹{total.toFixed(2)}
+//         </p>
+//         <button
+//           onClick={() => setView('checkout')}
+//           disabled={cartIsEmpty}
+//           className={`py-3 px-6 text-lg font-bold rounded-xl shadow-lg transition duration-200 mt-4 sm:mt-0 ${
+//             cartIsEmpty
+//               ? 'bg-gray-400 text-gray-700 cursor-not-allowed'
+//               : 'bg-green-600 text-white hover:bg-green-700 flex items-center'
+//           }`}
+//         >
+//           <Truck size={20} className="mr-2" />
+//           {getLabel('checkout', lang)}
+//         </button>
+//       </div>
+//       <button onClick={() => setView('shop')} className="text-sm text-blue-600 hover:underline mt-4">
+//         &larr; {getLabel('back_to_shop', lang)}
+//       </button>
+//     </div>
+//   );
+// };
+
+// const CheckoutForm = ({ cart, dispatch, setView, setOrderSubmissionStatus, setConfirmedOrder, lang }) => {
+//   const total = calculateCartTotal(cart);
+//   const [formData, setFormData] = useState({
+//     customerName: '',
+//     customerPhone: '',
+//     customerAddress: '',
+//   });
+//   const [error, setError] = useState(null);
+//   const [loading, setLoading] = useState(false);
+
+//   const handleChange = (e) => {
+//     setFormData({ ...formData, [e.target.name]: e.target.value });
+//   };
+
+//   const validate = () => {
+//     const phoneRegex = /^[6-9]\d{9}$/; // Validates a 10-digit Indian mobile number
+
+//     if (!formData.customerName || !formData.customerPhone || !formData.customerAddress) {
+//       setError(getLabel('fill_all_fields', lang));
+//       return false;
+//     }
+//     if (!phoneRegex.test(formData.customerPhone)) {
+//       setError(getLabel('invalid_phone', lang));
+//       return false;
+//     }
+//     if (cart.length === 0) {
+//       setError(getLabel('cart_empty_error', lang));
+//       return false;
+//     }
+//     setError(null);
+//     return true;
+//   };
+
+//   const handleSubmit = async (e) => {
+//     e.preventDefault();
+//     if (!validate()) return;
+
+//     const orderPayload = {
+//       customerName: formData.customerName,
+//       customerPhone: formData.customerPhone,
+//       customerAddress: formData.customerAddress,
+//       items: cart, // The full cart array is sent
+//       totalAmount: total,
+//       language: lang,
+//     };
+
+//     setLoading(true);
+//     setOrderSubmissionStatus(null);
+//     setConfirmedOrder(null);
+
+//     try {
+//       const response = await fetch(ORDERS_ENDPOINT, {
+//         method: 'POST',
+//         headers: { 'Content-Type': 'application/json' },
+//         body: JSON.stringify(orderPayload),
+//       });
+
+//       const result = await response.json();
+
+//       if (response.ok) {
+//         setConfirmedOrder({ ...orderPayload, orderId: result.orderId });
+//         setOrderSubmissionStatus('success');
+//         dispatch({ type: 'CLEAR_CART' });
+//         setView('confirmation');
+//       } else {
+//         setError(result.message || getLabel('network_error', lang));
+//         setOrderSubmissionStatus('error');
+//       }
+//     } catch (err) {
+//       setError(getLabel('network_error', lang));
+//       setOrderSubmissionStatus('error');
+//     } finally {
+//       setLoading(false);
+//     }
+//   };
+
+//   return (
+//     <div className="max-w-xl mx-auto bg-white p-6 rounded-xl shadow-xl border border-gray-200">
+//       <h2 className="text-3xl font-bold text-gray-900 mb-6 flex items-center">
+//         <Truck size={24} className="mr-3 text-green-600" />
+//         {getLabel('checkout', lang)}
+//       </h2>
+//       <p className="text-2xl font-extrabold text-green-700 mb-6 text-center">
+//         {getLabel('total', lang)}: ₹{total.toFixed(2)}
+//       </p>
+//       <form onSubmit={handleSubmit} className="space-y-5">
+//         <h3 className="text-xl font-semibold mb-4 border-b pb-2">
+//           {getLabel('customer_info', lang)}
+//         </h3>
+//         <div>
+//           <label htmlFor="customerName" className="block text-base font-medium text-gray-700">
+//             {getLabel('full_name', lang)}
+//           </label>
+//           <input
+//             type="text"
+//             name="customerName"
+//             id="customerName"
+//             value={formData.customerName}
+//             onChange={handleChange}
+//             className="mt-1 block w-full p-3 border border-gray-300 rounded-lg text-lg focus:ring-green-500 focus:border-green-500"
+//           />
+//         </div>
+//         <div>
+//           <label htmlFor="customerPhone" className="block text-base font-medium text-gray-700">
+//             {getLabel('phone_number', lang)}
+//           </label>
+//           <input
+//             type="tel"
+//             name="customerPhone"
+//             id="customerPhone"
+//             value={formData.customerPhone}
+//             onChange={handleChange}
+//             className="mt-1 block w-full p-3 border border-gray-300 rounded-lg text-lg focus:ring-green-500 focus:border-green-500"
+//           />
+//         </div>
+//         <div>
+//           <label htmlFor="customerAddress" className="block text-base font-medium text-gray-700">
+//             {getLabel('delivery_address', lang)}
+//           </label>
+//           <textarea
+//             name="customerAddress"
+//             id="customerAddress"
+//             rows="3"
+//             value={formData.customerAddress}
+//             onChange={handleChange}
+//             className="mt-1 block w-full p-3 border border-gray-300 rounded-lg text-lg focus:ring-green-500 focus:border-green-500"
+//           ></textarea>
+//         </div>
+//         {error && (
+//           <p className="p-3 bg-red-100 border border-red-400 text-red-700 rounded-lg flex items-center">
+//             <AlertTriangle size={20} className="mr-2" />
+//             {error}
+//           </p>
+//         )}
+//         <button
+//           type="submit"
+//           disabled={loading || total <= 0}
+//           className={`w-full py-4 px-4 text-xl font-bold rounded-xl shadow-lg transition duration-200 flex items-center justify-center ${
+//             loading || total <= 0 ? 'bg-gray-400 cursor-not-allowed' : 'bg-green-600 hover:bg-green-700 text-white'
+//           }`}
+//         >
+//           {loading ? (
+//             '...'
+//           ) : (
+//             <>
+//               <CheckCircle size={22} className="mr-2" />
+//               {getLabel('place_order', lang)}
+//             </>
+//           )}
+//         </button>
+//       </form>
+//       <button onClick={() => setView('shop')} className="text-sm text-blue-600 hover:underline mt-4">
+//         &larr; {getLabel('back_to_shop', lang)}
+//       </button>
+//     </div>
+//   );
+// };
+
+// const ConfirmationScreen = ({ confirmedOrder, setView, lang }) => (
+//   <div className="max-w-xl mx-auto bg-green-50 p-8 rounded-xl shadow-xl text-center border border-green-300">
+//     <CheckCircle size={60} className="text-green-600 mx-auto mb-4" />
+//     <h2 className="text-4xl font-extrabold text-green-800 mb-2">
+//       {getLabel('order_success', lang)}
+//     </h2>
+//     <p className="text-xl font-semibold text-gray-700 mb-6">
+//       {getLabel('order_id', lang)}: <span className="text-red-500">{confirmedOrder?.orderId || 'N/A'}</span>
+//     </p>
+//     <div className="bg-white p-4 rounded-lg border border-gray-100 text-left">
+//       <h3 className="text-lg font-bold mb-2">{getLabel('order_summary', lang)}</h3>
+//       <ul className="list-disc list-inside space-y-1 text-gray-600 text-sm">
+//         {confirmedOrder?.items.map(item => (
+//           <li key={item.id}>
+//             {item.name_en} ({item.name_hi}) x {item.qty} {item.unit} @ ₹{item.price}
+//           </li>
+//         ))}
+//       </ul>
+//       <p className="mt-4 text-xl font-extrabold text-gray-900 border-t pt-2">
+//         {getLabel('total', lang)}: ₹{confirmedOrder?.totalAmount.toFixed(2)}
+//       </p>
+//     </div>
+//     <button
+//       onClick={() => setView('shop')}
+//       className="mt-8 bg-blue-600 text-white py-3 px-6 text-lg font-bold rounded-xl hover:bg-blue-700 transition duration-200"
+//     >
+//       {getLabel('back_to_shop', lang)}
+//     </button>
+//   </div>
+// );
+
+// const AuthModal = ({ unlockAdmin, setRole, setView, lang }) => {
+//   const [password, setPassword] = useState('');
+//   const [error, setError] = useState(null);
+//   const [loading, setLoading] = useState(false);
+
+//   const handleSubmit = async (e) => {
+//     e.preventDefault();
+//     setError(null);
+//     setLoading(true);
+
+//     try {
+//         const response = await fetch(ADMIN_LOGIN_ENDPOINT, {
+//             method: 'POST',
+//             headers: { 'Content-Type': 'application/json' },
+//             body: JSON.stringify({ password }),
+//         });
+//         const result = await response.json();
+//         if (response.ok && result.token) {
+//             sessionStorage.setItem(ADMIN_VIEW_TOKEN_KEY, result.token);
+//             unlockAdmin(result.token);
+//         } else {
+//             setError(result.message || getLabel('password_incorrect', 'en'));
+//             sessionStorage.removeItem(ADMIN_VIEW_TOKEN_KEY);
+//         }
+//     } catch (err) {
+//         setError(getLabel('network_error', 'en'));
+//         sessionStorage.removeItem(ADMIN_VIEW_TOKEN_KEY);
+//     } finally {
+//         setLoading(false);
+//     }
+//   };
+
+//   return (
+//     <div className="fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center p-4 z-50">
+//       <div className="bg-white p-8 rounded-xl shadow-2xl max-w-sm w-full">
+//         <h2 className="text-2xl font-bold text-gray-900 mb-6 text-center flex items-center justify-center">
+//           <Lock size={24} className="mr-2 text-red-500" />
+//           {getLabel('admin_auth_title', 'en')}
+//         </h2>
+        
+//         <form onSubmit={handleSubmit} className="space-y-4">
+//           <input
+//             type="password"
+//             value={password}
+//             onChange={(e) => setPassword(e.target.value)}
+//             placeholder={getLabel('admin_password', 'en')}
+//             className="w-full p-3 border border-gray-300 rounded-lg text-lg focus:ring-red-500 focus:border-red-500"
+//           />
+//           {error && (
+//             <p className="text-sm text-red-600 flex items-center">
+//               <AlertTriangle size={16} className="mr-1" />{error}
+//             </p>
+//           )}
+//           <button
+//             type="submit"
+//             disabled={loading}
+//             className={`w-full py-3 px-4 text-lg font-bold rounded-xl transition duration-200 flex items-center justify-center ${
+//               loading ? 'bg-gray-400 cursor-not-allowed' : 'bg-red-600 hover:bg-red-700 text-white'
+//             }`}
+//           >
+//             {loading ? '...' : getLabel('login', 'en')}
+//           </button>
+//         </form>
+//         <button
+//           onClick={() => {
+//             setRole('customer');
+//             setView('shop');
+//           }}
+//           className="mt-4 w-full py-3 px-4 text-lg font-bold rounded-xl transition duration-200 text-blue-600 hover:text-blue-800"
+//         >
+//           &larr; {getLabel('back_to_shop', lang)}
+//         </button>
+//       </div>
+//     </div>
+//   );
+// };
+
+// const AdminDashboard = ({ token, lang, onLogout }) => {
+//   const [orders, setOrders] = useState([]);
+//   const [loading, setLoading] = useState(false);
+//   const [error, setError] = useState(null);
+
+//   const fetchOrders = useCallback(async () => {
+//     setLoading(true);
+//     setError(null);
+//     try {
+//       const response = await fetch(ORDERS_ENDPOINT, {
+//         method: 'GET',
+//         headers: {
+//           'Authorization': `Bearer ${token}`,
+//           'Content-Type': 'application/json',
+//         },
+//       });
+
+//       if (response.ok) {
+//         const result = await response.json();
+//         setOrders(result.orders || []);
+//       } else if (response.status === 403 || response.status === 401) {
+//         setError("Authorization Failed. Please log in again.");
+//         onLogout();
+//       } else {
+//         const result = await response.json();
+//         setError(result.message || getLabel('network_error', lang));
+//       }
+//     } catch (err) {
+//       setError(getLabel('network_error', lang));
+//     } finally {
+//       setLoading(false);
+//     }
+//   }, [token, lang, onLogout]);
+
+//   useEffect(() => {
+//     fetchOrders();
+//   }, [fetchOrders]);
+
+//   const renderItems = (items) => {
+//     if (!Array.isArray(items)) return 'N/A';
+//     return items.map(item => `${item.name_en} (${item.qty}kg)`).join(', ');
+//   };
+
+//   return (
+//     <div className="p-6 bg-white rounded-xl shadow-xl border border-gray-200">
+//       <div className="flex justify-between items-center mb-6 border-b pb-4">
+//         <h2 className="text-3xl font-bold text-red-700 flex items-center">
+//           <ListOrdered size={24} className="mr-3" />
+//           {getLabel('admin_dashboard', lang)}
+//         </h2>
+//         <button
+//             onClick={onLogout}
+//             className="bg-red-500 text-white font-semibold py-2 px-4 rounded-lg hover:bg-red-600 transition duration-200 text-sm"
+//         >
+//             {getLabel('logout', 'en')}
+//         </button>
+//       </div>
+
+//       <div className="flex justify-between items-center mb-4">
+//         <p className="text-lg font-medium text-gray-700">
+//             {getLabel('orders_retrieved', lang)}: {loading ? '...' : orders.length}
+//         </p>
+//         <button
+//             onClick={fetchOrders}
+//             disabled={loading}
+//             className="bg-blue-500 text-white font-semibold py-2 px-4 rounded-lg hover:bg-blue-600 transition duration-200 text-sm disabled:opacity-50"
+//         >
+//             {loading ? 'Refreshing...' : <RefreshCw size={16} className='inline mr-1'/>}
+//             Refresh
+//         </button>
+//       </div>
+
+//       {error && (
+//         <p className="p-3 bg-red-100 border border-red-400 text-red-700 rounded-lg flex items-center mb-4">
+//           <AlertTriangle size={20} className="mr-2" />
+//           {error}
+//         </p>
+//       )}
+
+//       <div className="overflow-x-auto rounded-lg border border-gray-300">
+//         <table className="min-w-full divide-y divide-gray-200">
+//           <thead className="bg-gray-100">
+//             <tr className="text-xs font-semibold uppercase tracking-wider text-gray-600">
+//               <th className="px-6 py-3 text-left">Order ID</th>
+//               <th className="px-6 py-3 text-left">Date</th>
+//               <th className="px-6 py-3 text-left">Customer</th>
+//               <th className="px-6 py-3 text-left">Address</th>
+//               <th className="px-6 py-3 text-left">Items</th>
+//               <th className="px-6 py-3 text-right">Total</th>
+//               <th className="px-6 py-3 text-left">Status</th>
+//             </tr>
+//           </thead>
+//           <tbody className="bg-white divide-y divide-gray-200">
+//             {orders.length === 0 && !loading && (
+//                 <tr>
+//                     <td colSpan="7" className="px-6 py-4 text-center text-gray-500">No orders found.</td>
+//                 </tr>
+//             )}
+//             {orders.map((order, index) => (
+//               <tr key={order.OrderID || index} className="hover:bg-gray-50">
+//                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{order.OrderID}</td>
+//                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{new Date(order.OrderDate).toLocaleDateString('en-GB')}</td>
+//                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{order.CustomerName}<br/>({order.CustomerPhone})</td>
+//                 <td className="px-6 py-4 whitespace-pre-wrap text-sm text-gray-500 max-w-xs">{order.CustomerAddress}</td>
+//                 <td className="px-6 py-4 whitespace-normal text-xs text-gray-600 max-w-sm">{renderItems(order.ItemsJSON)}</td>
+//                 <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-right">₹{parseFloat(order.TotalAmount).toFixed(2)}</td>
+//                 <td className="px-6 py-4 whitespace-nowrap text-xs">
+//                     <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+//                         {order.Status || T.status_new.en}
+//                     </span>
+//                 </td>
+//               </tr>
+//             ))}
+//           </tbody>
+//         </table>
+//       </div>
+//     </div>
+//   );
+// };
+
+// const App = () => {
+//   const [role, setRole] = useState('customer');
+//   const [adminToken, setAdminToken] = useState(sessionStorage.getItem(ADMIN_VIEW_TOKEN_KEY));
+//   const adminUnlocked = role === 'admin' && !!adminToken;
+//   const [view, setView] = useState('shop');
+//   const [lang, setLang] = useState('both'); 
+//   const [orderSubmissionStatus, setOrderSubmissionStatus] = useState(null);
+//   const [confirmedOrder, setConfirmedOrder] = useState(null);
+//   const [cart, dispatch] = useReducer(cartReducer, []);
+  
+//   // State to hold the quantities displayed in the input fields on the product cards
+//   const [productQuantities, setProductQuantities] = useState({});
+
+//   // Sync the local quantity display with the master cart state
+//   useEffect(() => {
+//     const quantitiesFromCart = PRODUCTS.reduce((acc, product) => {
+//       const itemInCart = cart.find(i => i.id === product.id);
+//       acc[product.id] = itemInCart ? itemInCart.qty : 0;
+//       return acc;
+//     }, {});
+//     setProductQuantities(quantitiesFromCart);
+//   }, [cart]);
+
+//   // Handler for when a quantity input is changed on a product card
+//   const handleQuantityChange = (productId, newQty) => {
+//     setProductQuantities(prev => ({
+//       ...prev,
+//       [productId]: Math.max(0, parseFloat(newQty) || 0)
+//     }));
+//   };
+
+//   // Handler for the "Add to Cart" / "Update Cart" button on a product card
+//   const handleBatchAddToCart = (clickedProductId) => {
+//     const currentQuantities = { ...productQuantities };
+    
+//     // If the button is an "Add to Cart" button for a new item, start it at 0.5
+//     const itemInCart = cart.find(item => item.id === clickedProductId);
+//     if (!itemInCart && currentQuantities[clickedProductId] === 0) {
+//       currentQuantities[clickedProductId] = 0.5;
+//     }
+
+//     // Create a payload of all products and their current quantities from the screen
+//     const itemsToUpdate = PRODUCTS.map(product => {
+//       return { ...product, qty: currentQuantities[product.id] || 0 };
+//     });
+    
+//     // Dispatch a single action to update the entire cart at once
+//     dispatch({ type: 'BATCH_UPDATE_ITEMS', payload: { items: itemsToUpdate } });
+//   };
+
+
+//   const handleRoleChange = (newRole) => {
+//     setRole(newRole);
+//     if (newRole === 'admin') {
+//       setView(sessionStorage.getItem(ADMIN_VIEW_TOKEN_KEY) ? 'admin' : 'adminAuth');
+//     } else {
+//       setView('shop');
+//     }
+//   };
+
+//   const unlockAdmin = (token) => {
+//     setAdminToken(token);
+//     setView('admin');
+//   };
+
+//   const adminLogout = () => {
+//       sessionStorage.removeItem(ADMIN_VIEW_TOKEN_KEY);
+//       setAdminToken(null);
+//       setRole('customer');
+//       setView('shop');
+//   };
+
+//   const renderView = () => {
+//     if (role === 'admin' && view === 'adminAuth') {
+//         return <AuthModal unlockAdmin={unlockAdmin} setRole={setRole} setView={setView} lang={lang} />;
+//     }
+//     if (adminUnlocked && view === 'admin') {
+//       return <AdminDashboard token={adminToken} lang={lang} onLogout={adminLogout} />;
+//     }
+
+//     switch (view) {
+//       case 'cart':
+//         return <Cart cart={cart} dispatch={dispatch} setView={setView} lang={lang} />;
+//       case 'checkout':
+//         return <CheckoutForm cart={cart} dispatch={dispatch} setView={setView} setOrderSubmissionStatus={setOrderSubmissionStatus} setConfirmedOrder={setConfirmedOrder} lang={lang} />;
+//       case 'confirmation':
+//         return <ConfirmationScreen confirmedOrder={confirmedOrder} setView={setView} lang={lang} />;
+//       case 'shop':
+//       default:
+//         return (
+//           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+//             {PRODUCTS.map(product => (
+//               <ProductCard
+//                 key={product.id}
+//                 product={product}
+//                 quantity={productQuantities[product.id] || 0}
+//                 onQuantityChange={handleQuantityChange}
+//                 onAddToCart={handleBatchAddToCart}
+//                 lang={lang}
+//               />
+//             ))}
+//           </div>
+//         );
+//     }
+//   };
+
+//   return (
+//     <div className="min-h-screen bg-gray-50 font-sans">
+//       <header className="bg-white shadow-md sticky top-0 z-40">
+//         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
+//           <div className="flex items-center text-3xl font-extrabold text-gray-900">
+//             <Store size={30} className="text-green-600 mr-3" />
+//             {getLabel('app_name', 'en')} / <span className="text-green-600 ml-2">{getLabel('app_name', 'hi')}</span>
+//           </div>
+//           <div className="flex items-center space-x-4">
+//             <div className="flex items-center space-x-2 bg-gray-100 p-2 rounded-xl text-sm font-medium">
+//               <span className="text-gray-600">{getLabel('role', 'en')}:</span>
+//               <button
+//                 onClick={() => handleRoleChange('customer')}
+//                 className={`px-3 py-1 rounded-lg transition ${role === 'customer' ? 'bg-green-600 text-white' : 'hover:bg-gray-200'}`}
+//               >
+//                 <User size={16} className="inline mr-1"/> {getLabel('customer', 'en')}
+//               </button>
+//               <button
+//                 onClick={() => handleRoleChange('admin')}
+//                 className={`px-3 py-1 rounded-lg transition ${role === 'admin' ? 'bg-red-600 text-white' : 'hover:bg-gray-200'}`}
+//               >
+//                 <Lock size={16} className="inline mr-1"/> {getLabel('admin', 'en')}
+//               </button>
+//             </div>
+            
+//             {role === 'customer' && (
+//                 <button
+//                     onClick={() => setView('cart')}
+//                     className="flex items-center bg-blue-600 text-white font-semibold py-2 px-4 rounded-xl shadow-md hover:bg-blue-700 transition duration-200"
+//                 >
+//                     <ShoppingCart size={20} className="mr-2" />
+//                     {getLabel('view_cart', 'en')} ({cart.length})
+//                 </button>
+//             )}
+
+//             <div className="bg-gray-100 p-2 rounded-xl text-sm font-medium">
+//                 <span className="text-gray-600">{getLabel('language', 'en')}:</span>
+//                 <span className="ml-2 text-green-600 font-bold">EN / HI</span>
+//             </div>
+//           </div>
+//         </div>
+//       </header>
+//       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+//         {renderView()}
+//       </main>
+//       <footer className="w-full bg-gray-200 text-center py-4 text-gray-600 text-sm">
+//         &copy; 2024 {getLabel('app_name', 'en')}. {getLabel('app_name', 'hi')}.
+//       </footer>
+//     </div>
+//   );
+// };
+
+// export default App;
+
 import React, { useState, useReducer, useEffect, useCallback } from 'react';
 import { createRoot } from 'react-dom/client';
 
 // Load lucide-react icons for a clean look
-import { ShoppingCart, User, Lock, Store, Zap, X, CheckCircle, Truck, RefreshCw, AlertTriangle, ListOrdered, IndianRupee } from 'lucide-react';
+import { ShoppingCart, User, Lock, Store, Zap, X, CheckCircle, Truck, RefreshCw, AlertTriangle, ListOrdered, IndianRupee, Edit, Save, XCircle } from 'lucide-react';
 
-// --- Static Product Data ---
-const PRODUCTS = [
-  { id: 'aalu', name_en: 'Potato', name_hi: 'आलू', price: 20, unit: 'kg', image: '/images/potato.jpg' },
-  { id: 'piyaz', name_en: 'Onion', name_hi: 'प्याज़', price: 30, unit: 'kg', image: '/images/onion.jpg' },
-  { id: 'adrak', name_en: 'Ginger', name_hi: 'अदरक', price: 80, unit: 'kg', image: '/images/ginger.jpg' },
-  { id: 'lasun', name_en: 'Garlic', name_hi: 'लहसुन', price: 70, unit: 'kg', image: '/images/garlic.jpg' }
+// --- Static Product Data (Initial State) ---
+const PRODUCTS_DATA = [
+  { id: 'aalu', name_en: 'Potato', name_hi: 'आलू', price: 20, unit: 'kg', image: '/images/patato.jpg' },
+  { id: 'piyaz', name_en: 'Onion', name_hi: 'प्याज़', price: 30, unit: 'kg', image: '/images/piyaz.jpg' },
+  { id: 'adrak', name_en: 'Ginger', name_hi: 'अदरक', price: 80, unit: 'kg', image: '/images/adrak.jpg' },
+  { id: 'lasun', name_en: 'Garlic', name_hi: 'लहसुन', price: 70, unit: 'kg', image: '/images/lasun.jpg' }
 ];
 
 // --- Localization Map (T) ---
@@ -50,6 +832,12 @@ const T = {
   password_incorrect: { en: 'Incorrect Password.', hi: 'गलत पासवर्ड।' },
   orders_retrieved: { en: 'Orders Retrieved', hi: 'ऑर्डर प्राप्त हुए' },
   status_new: { en: 'New', hi: 'नया' },
+  edit_rate_list: { en: 'Edit Rate List', hi: 'दर सूची संपादित करें' },
+  save_changes: { en: 'Save Changes', hi: 'बदलाव सहेजें' },
+  cancel: { en: 'Cancel', hi: 'रद्द करें' },
+  current_price: { en: 'Current Price', hi: 'वर्तमान मूल्य' },
+  new_price: { en: 'New Price', hi: 'नया मूल्य' },
+  view_orders: { en: 'View Orders', hi: 'आदेश देखें' },
 };
 
 // --- Config and Constants ---
@@ -500,10 +1288,73 @@ const AuthModal = ({ unlockAdmin, setRole, setView, lang }) => {
   );
 };
 
-const AdminDashboard = ({ token, lang, onLogout }) => {
+// --- NEW COMPONENT FOR ADMIN PRICE EDITING ---
+const AdminPriceEditor = ({ products, onSavePrices, onCancel, lang }) => {
+  const [editedPrices, setEditedPrices] = useState(
+    products.reduce((acc, p) => ({ ...acc, [p.id]: p.price }), {})
+  );
+
+  const handlePriceInputChange = (productId, newPrice) => {
+    setEditedPrices(prev => ({ ...prev, [productId]: parseFloat(newPrice) || 0 }));
+  };
+
+  const handleSave = () => {
+    const updatedProducts = products.map(p => ({
+      ...p,
+      price: editedPrices[p.id] !== undefined ? editedPrices[p.id] : p.price
+    }));
+    onSavePrices(updatedProducts);
+  };
+
+  return (
+    <div>
+      <h3 className="text-2xl font-bold text-gray-800 mb-4">{getLabel('edit_rate_list', lang)}</h3>
+      <div className="space-y-4 bg-gray-50 p-4 rounded-lg border">
+        {products.map(product => (
+          <div key={product.id} className="grid grid-cols-3 items-center gap-4">
+            <label htmlFor={`price-${product.id}`} className="font-semibold text-gray-700">
+              {product.name_en} / {product.name_hi}
+            </label>
+            <div className="text-gray-600">
+              ({getLabel('current_price', lang)}: ₹{product.price})
+            </div>
+            <input
+              type="number"
+              id={`price-${product.id}`}
+              value={editedPrices[product.id] || ''}
+              onChange={(e) => handlePriceInputChange(product.id, e.target.value)}
+              className="w-full p-2 border border-gray-300 rounded-lg focus:ring-green-500 focus:border-green-500"
+              placeholder={getLabel('new_price', lang)}
+            />
+          </div>
+        ))}
+      </div>
+      <div className="mt-6 flex justify-end space-x-4">
+        <button
+          onClick={onCancel}
+          className="bg-gray-500 text-white font-semibold py-2 px-4 rounded-lg hover:bg-gray-600 transition duration-200 flex items-center"
+        >
+          <XCircle size={18} className="mr-2" />
+          {getLabel('cancel', lang)}
+        </button>
+        <button
+          onClick={handleSave}
+          className="bg-green-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-green-700 transition duration-200 flex items-center"
+        >
+          <Save size={18} className="mr-2" />
+          {getLabel('save_changes', lang)}
+        </button>
+      </div>
+    </div>
+  );
+};
+
+
+const AdminDashboard = ({ token, lang, onLogout, products, onUpdateProducts }) => {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [isEditingPrices, setIsEditingPrices] = useState(false);
 
   const fetchOrders = useCallback(async () => {
     setLoading(true);
@@ -535,8 +1386,10 @@ const AdminDashboard = ({ token, lang, onLogout }) => {
   }, [token, lang, onLogout]);
 
   useEffect(() => {
-    fetchOrders();
-  }, [fetchOrders]);
+    if (!isEditingPrices) {
+      fetchOrders();
+    }
+  }, [fetchOrders, isEditingPrices]);
 
   const renderItems = (items) => {
     if (!Array.isArray(items)) return 'N/A';
@@ -550,72 +1403,95 @@ const AdminDashboard = ({ token, lang, onLogout }) => {
           <ListOrdered size={24} className="mr-3" />
           {getLabel('admin_dashboard', lang)}
         </h2>
-        <button
-            onClick={onLogout}
-            className="bg-red-500 text-white font-semibold py-2 px-4 rounded-lg hover:bg-red-600 transition duration-200 text-sm"
-        >
-            {getLabel('logout', 'en')}
-        </button>
+        <div className="flex items-center space-x-4">
+           <button
+            onClick={() => setIsEditingPrices(!isEditingPrices)}
+            className="bg-purple-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-purple-700 transition duration-200 text-sm flex items-center"
+          >
+            <Edit size={16} className="mr-2" />
+            {isEditingPrices ? getLabel('view_orders', lang) : getLabel('edit_rate_list', lang)}
+          </button>
+          <button
+              onClick={onLogout}
+              className="bg-red-500 text-white font-semibold py-2 px-4 rounded-lg hover:bg-red-600 transition duration-200 text-sm"
+          >
+              {getLabel('logout', 'en')}
+          </button>
+        </div>
       </div>
+      
+      {isEditingPrices ? (
+        <AdminPriceEditor 
+          products={products}
+          onSavePrices={(updatedProducts) => {
+            onUpdateProducts(updatedProducts);
+            setIsEditingPrices(false);
+          }}
+          onCancel={() => setIsEditingPrices(false)}
+          lang={lang}
+        />
+      ) : (
+        <>
+          <div className="flex justify-between items-center mb-4">
+            <p className="text-lg font-medium text-gray-700">
+                {getLabel('orders_retrieved', lang)}: {loading ? '...' : orders.length}
+            </p>
+            <button
+                onClick={fetchOrders}
+                disabled={loading}
+                className="bg-blue-500 text-white font-semibold py-2 px-4 rounded-lg hover:bg-blue-600 transition duration-200 text-sm disabled:opacity-50"
+            >
+                {loading ? 'Refreshing...' : <RefreshCw size={16} className='inline mr-1'/>}
+                Refresh
+            </button>
+          </div>
 
-      <div className="flex justify-between items-center mb-4">
-        <p className="text-lg font-medium text-gray-700">
-            {getLabel('orders_retrieved', lang)}: {loading ? '...' : orders.length}
-        </p>
-        <button
-            onClick={fetchOrders}
-            disabled={loading}
-            className="bg-blue-500 text-white font-semibold py-2 px-4 rounded-lg hover:bg-blue-600 transition duration-200 text-sm disabled:opacity-50"
-        >
-            {loading ? 'Refreshing...' : <RefreshCw size={16} className='inline mr-1'/>}
-            Refresh
-        </button>
-      </div>
+          {error && (
+            <p className="p-3 bg-red-100 border border-red-400 text-red-700 rounded-lg flex items-center mb-4">
+              <AlertTriangle size={20} className="mr-2" />
+              {error}
+            </p>
+          )}
 
-      {error && (
-        <p className="p-3 bg-red-100 border border-red-400 text-red-700 rounded-lg flex items-center mb-4">
-          <AlertTriangle size={20} className="mr-2" />
-          {error}
-        </p>
-      )}
-
-      <div className="overflow-x-auto rounded-lg border border-gray-300">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-100">
-            <tr className="text-xs font-semibold uppercase tracking-wider text-gray-600">
-              <th className="px-6 py-3 text-left">Order ID</th>
-              <th className="px-6 py-3 text-left">Date</th>
-              <th className="px-6 py-3 text-left">Customer</th>
-              <th className="px-6 py-3 text-left">Address</th>
-              <th className="px-6 py-3 text-left">Items</th>
-              <th className="px-6 py-3 text-right">Total</th>
-              <th className="px-6 py-3 text-left">Status</th>
-            </tr>
-          </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
-            {orders.length === 0 && !loading && (
-                <tr>
-                    <td colSpan="7" className="px-6 py-4 text-center text-gray-500">No orders found.</td>
+          <div className="overflow-x-auto rounded-lg border border-gray-300">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-100">
+                <tr className="text-xs font-semibold uppercase tracking-wider text-gray-600">
+                  <th className="px-6 py-3 text-left">Order ID</th>
+                  <th className="px-6 py-3 text-left">Date</th>
+                  <th className="px-6 py-3 text-left">Customer</th>
+                  <th className="px-6 py-3 text-left">Address</th>
+                  <th className="px-6 py-3 text-left">Items</th>
+                  <th className="px-6 py-3 text-right">Total</th>
+                  <th className="px-6 py-3 text-left">Status</th>
                 </tr>
-            )}
-            {orders.map((order, index) => (
-              <tr key={order.OrderID || index} className="hover:bg-gray-50">
-                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{order.OrderID}</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{new Date(order.OrderDate).toLocaleDateString('en-GB')}</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{order.CustomerName}<br/>({order.CustomerPhone})</td>
-                <td className="px-6 py-4 whitespace-pre-wrap text-sm text-gray-500 max-w-xs">{order.CustomerAddress}</td>
-                <td className="px-6 py-4 whitespace-normal text-xs text-gray-600 max-w-sm">{renderItems(order.ItemsJSON)}</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-right">₹{parseFloat(order.TotalAmount).toFixed(2)}</td>
-                <td className="px-6 py-4 whitespace-nowrap text-xs">
-                    <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
-                        {order.Status || T.status_new.en}
-                    </span>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {orders.length === 0 && !loading && (
+                    <tr>
+                        <td colSpan="7" className="px-6 py-4 text-center text-gray-500">No orders found.</td>
+                    </tr>
+                )}
+                {orders.map((order, index) => (
+                  <tr key={order.OrderID || index} className="hover:bg-gray-50">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{order.OrderID}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{new Date(order.OrderDate).toLocaleDateString('en-GB')}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{order.CustomerName}<br/>({order.CustomerPhone})</td>
+                    <td className="px-6 py-4 whitespace-pre-wrap text-sm text-gray-500 max-w-xs">{order.CustomerAddress}</td>
+                    <td className="px-6 py-4 whitespace-normal text-xs text-gray-600 max-w-sm">{renderItems(order.ItemsJSON)}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-right">₹{parseFloat(order.TotalAmount).toFixed(2)}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-xs">
+                        <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                            {order.Status || T.status_new.en}
+                        </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </>
+      )}
     </div>
   );
 };
@@ -630,18 +1506,22 @@ const App = () => {
   const [confirmedOrder, setConfirmedOrder] = useState(null);
   const [cart, dispatch] = useReducer(cartReducer, []);
   
+  // --- STATE FOR PRODUCTS ---
+  // The list of products is now in state so it can be updated by the admin.
+  const [products, setProducts] = useState(PRODUCTS_DATA);
+
   // State to hold the quantities displayed in the input fields on the product cards
   const [productQuantities, setProductQuantities] = useState({});
 
   // Sync the local quantity display with the master cart state
   useEffect(() => {
-    const quantitiesFromCart = PRODUCTS.reduce((acc, product) => {
+    const quantitiesFromCart = products.reduce((acc, product) => {
       const itemInCart = cart.find(i => i.id === product.id);
       acc[product.id] = itemInCart ? itemInCart.qty : 0;
       return acc;
     }, {});
     setProductQuantities(quantitiesFromCart);
-  }, [cart]);
+  }, [cart, products]);
 
   // Handler for when a quantity input is changed on a product card
   const handleQuantityChange = (productId, newQty) => {
@@ -662,7 +1542,7 @@ const App = () => {
     }
 
     // Create a payload of all products and their current quantities from the screen
-    const itemsToUpdate = PRODUCTS.map(product => {
+    const itemsToUpdate = products.map(product => {
       return { ...product, qty: currentQuantities[product.id] || 0 };
     });
     
@@ -697,7 +1577,13 @@ const App = () => {
         return <AuthModal unlockAdmin={unlockAdmin} setRole={setRole} setView={setView} lang={lang} />;
     }
     if (adminUnlocked && view === 'admin') {
-      return <AdminDashboard token={adminToken} lang={lang} onLogout={adminLogout} />;
+      return <AdminDashboard 
+                token={adminToken} 
+                lang={lang} 
+                onLogout={adminLogout}
+                products={products}
+                onUpdateProducts={setProducts} 
+             />;
     }
 
     switch (view) {
@@ -711,7 +1597,7 @@ const App = () => {
       default:
         return (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {PRODUCTS.map(product => (
+            {products.map(product => (
               <ProductCard
                 key={product.id}
                 product={product}
