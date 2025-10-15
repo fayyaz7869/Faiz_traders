@@ -1,35 +1,47 @@
 import { google } from 'googleapis';
 import path from 'path';
+import fs from 'fs'; // Using Node's built-in file system module
 import { fileURLToPath } from 'url';
 import logger from './logger.js';
 
-// Get __dirname in ES modules
+// Helper to get the directory name in ES Modules
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-if (!process.env.SHEET_ID || !process.env.GOOGLE_SERVICE_ACCOUNT_KEY) {
-    throw new Error("FATAL ERROR: SHEET_ID or GOOGLE_SERVICE_ACCOUNT_KEY is not defined in the .env file. Please check your configuration.");
+// Check for required environment variables on startup
+if (!process.env.GOOGLE_SERVICE_ACCOUNT_KEY || !process.env.SHEET_ID) {
+    logger.error('FATAL: Missing Google Sheets API credentials or Sheet ID in environment variables.');
+    // In a production app, you might want to stop the server if credentials are not found
+    // process.exit(1); 
 }
 
 const SHEET_ID = process.env.SHEET_ID;
-
-// --- MODIFICATION FOR CONFIGURABLE SHEET NAME ---
-// Use the SHEET_NAME from .env, or default to 'Sheet1' if it's not provided.
-const SHEET_NAME = process.env.SHEET_TAB_NAME ;
-
-const keyFileFromEnv = process.env.GOOGLE_SERVICE_ACCOUNT_KEY.trim().replace(/["']/g, '');
-const KEY_FILE_PATH = path.resolve(__dirname, '..', keyFileFromEnv);
+// Default to 'Sheet1' if SHEET_NAME is not provided, making it more robust
+const SHEET_NAME = process.env.SHEET_NAME || 'Sheet1'; 
+const KEY_FILE_PATH = path.resolve(__dirname, '..', process.env.GOOGLE_SERVICE_ACCOUNT_KEY);
 const SCOPES = ['https://www.googleapis.com/auth/spreadsheets'];
 
 /**
  * Initializes and returns an authenticated Google Sheets API client.
  */
 const getSheetsClient = () => {
-    const auth = new google.auth.GoogleAuth({
-        keyFile: KEY_FILE_PATH,
-        scopes: SCOPES,
-    });
-    return google.sheets({ version: 'v4', auth });
+    // --- UPDATED AUTHENTICATION METHOD ---
+    // This fixes the 'keyFilename is deprecated' warning.
+    try {
+        // Read the credentials file content synchronously
+        const keyFileContent = fs.readFileSync(KEY_FILE_PATH);
+        const credentials = JSON.parse(keyFileContent);
+
+        // Use the 'credentials' option instead of the deprecated 'keyFile'
+        const auth = new google.auth.GoogleAuth({
+            credentials,
+            scopes: SCOPES,
+        });
+        return google.sheets({ version: 'v4', auth });
+    } catch (error) {
+        logger.error(`Failed to read or parse Google credentials file at: ${KEY_FILE_PATH}`, { error: error.message });
+        throw new Error('Could not initialize Google Sheets client. Check credentials file path and format.');
+    }
 };
 
 /**
@@ -53,12 +65,9 @@ export const appendOrder = async (orderData) => {
             ],
         ];
 
-        // Use the SHEET_NAME variable for the range
-        const range = `${SHEET_NAME}!A:I`;
-
         await sheets.spreadsheets.values.append({
             spreadsheetId: SHEET_ID,
-            range: range,
+            range: `${SHEET_NAME}!A:I`, // Uses the configured sheet name
             valueInputOption: 'USER_ENTERED',
             resource: {
                 values: values,
@@ -77,16 +86,13 @@ export const appendOrder = async (orderData) => {
 export const getOrders = async () => {
     try {
         const sheets = getSheetsClient();
-        // Use the SHEET_NAME variable for the range
-        const range = `${SHEET_NAME}!A:I`;
-
         const response = await sheets.spreadsheets.values.get({
             spreadsheetId: SHEET_ID,
-            range: range,
+            range: `${SHEET_NAME}!A:I`, // Uses the configured sheet name
         });
 
         const rows = response.data.values;
-        if (!rows || rows.length <= 1) {
+        if (!rows || rows.length <= 1) { // Check for header only or empty sheet
             return [];
         }
 
@@ -94,7 +100,8 @@ export const getOrders = async () => {
         const orders = rows.slice(1).map((row) => {
             const order = {};
             headers.forEach((header, index) => {
-                order[header] = row[index];
+                // Safely assign values, preventing errors from empty cells in a row
+                order[header] = row[index] || ''; 
             });
             return order;
         });
