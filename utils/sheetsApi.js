@@ -114,6 +114,7 @@
 // };
 
 import { google } from 'googleapis';
+import { JWT } from 'google-auth-library';
 import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
@@ -129,26 +130,27 @@ if (!process.env.GOOGLE_SERVICE_ACCOUNT_KEY || !process.env.SHEET_ID) {
 }
 
 const SHEET_ID = process.env.SHEET_ID;
-// Use the correct variable name you have set on Render (e.g., SHEET_NAME or SHEET_TAB_NAME)
 const SHEET_NAME = process.env.SHEET_NAME || process.env.SHEET_TAB_NAME || 'Sheet1'; 
 const KEY_FILE_PATH = path.resolve(__dirname, '..', process.env.GOOGLE_SERVICE_ACCOUNT_KEY || 'google-key.json');
 const SCOPES = ['https://www.googleapis.com/auth/spreadsheets'];
 
 /**
- * Initializes and returns an authenticated Google Sheets API client.
+ * Initializes and returns an authenticated Google Sheets API client using the modern JWT method.
  */
 const getSheetsClient = () => {
     try {
         const keyFileContent = fs.readFileSync(KEY_FILE_PATH);
         const credentials = JSON.parse(keyFileContent);
 
-        const auth = new google.auth.GoogleAuth({
-            credentials,
+        const auth = new JWT({
+            email: credentials.client_email,
+            key: credentials.private_key,
             scopes: SCOPES,
         });
+
         return google.sheets({ version: 'v4', auth });
     } catch (error) {
-        logger.error(`Failed to read or parse credentials file at: ${KEY_FILE_PATH}`, { error: error.message });
+        logger.error(`Failed to initialize Google Sheets client`, { error: error.message });
         throw new Error('Could not initialize Google Sheets client. Check credentials file path and format.');
     }
 };
@@ -156,7 +158,7 @@ const getSheetsClient = () => {
 
 /**
  * Retrieves all orders from the Google Sheet.
- * THIS FUNCTION HAS BEEN MADE MORE ROBUST.
+ * THIS IS THE DEFINITIVE VERSION: It reads data by column position, ignoring headers completely.
  * @returns {Promise<Array<Object>>} An array of order objects.
  */
 export const getOrders = async () => {
@@ -164,55 +166,46 @@ export const getOrders = async () => {
         const sheets = getSheetsClient();
         const response = await sheets.spreadsheets.values.get({
             spreadsheetId: SHEET_ID,
-            range: `${SHEET_NAME}`, // Read the entire sheet
+            range: `${SHEET_NAME}`, // Read the entire sheet to get all data
         });
 
         const rows = response.data.values;
 
-        // If there are no rows or only a header row, return empty
+        // If there are no rows or only a header row, return an empty array
         if (!rows || rows.length <= 1) {
-            logger.info('No data rows found in Google Sheet.');
+            logger.info('No data rows found in Google Sheet to process.');
             return [];
         }
+        
+        // Define the exact keys the frontend expects, in the correct order
+        const frontendKeys = [
+            'OrderID', 'OrderDate', 'CustomerName', 'CustomerPhone', 
+            'CustomerAddress', 'ItemsJSON', 'TotalAmount', 'Language', 'Status'
+        ];
 
-        const headers = rows[0];
-        // Filter out any completely empty rows to avoid errors
+        // Skip the header row (index 0) and process only the data rows
         const dataRows = rows.slice(1).filter(row => row.some(cell => cell && cell.trim() !== ''));
-
-        // --- ADDED LOGGING FOR DEBUGGING ---
-        // This will show us exactly what the server is reading in the Render logs.
-        logger.info(`Successfully retrieved ${dataRows.length} data rows from Google Sheet.`);
 
         const orders = dataRows.map((row) => {
             const order = {};
-            headers.forEach((header, index) => {
-                // Trim the header to remove any hidden spaces (like in "Name ")
-                const trimmedHeader = header.trim(); 
-                // Safely assign value, defaulting to an empty string if a cell is missing
-                order[trimmedHeader] = row[index] || ''; 
+            // Assign data to the correct key based on its column position (index)
+            frontendKeys.forEach((key, index) => {
+                order[key] = row[index] || ''; // Safely handle empty cells
             });
 
-            // Attempt to parse the items JSON string back into an array
-            // It will now look for "Product" based on your JSON output
-            const itemsKey = "ItemsJSON"; // The frontend expects this key
-            const sheetItemsKey = "Product"; // Your sheet provides this key
-
-            if (order[sheetItemsKey]) {
+            // Safely parse the product JSON, which is at index 5
+            if (order.ItemsJSON) {
                 try {
-                    // We assign the parsed data to the key the frontend wants
-                    order[itemsKey] = JSON.parse(order[sheetItemsKey]);
+                    order.ItemsJSON = JSON.parse(order.ItemsJSON);
                 } catch (e) {
-                    logger.warn(`Could not parse product data for order ${order.OrderID}`);
-                    order[itemsKey] = []; // Default to empty array on failure
+                    logger.warn(`Could not parse ItemsJSON for order ${order.OrderID}`);
+                    order.ItemsJSON = []; // Default to an empty array on failure
                 }
-            } else {
-                 order[itemsKey] = [];
             }
             return order;
         });
         
-        // --- ADDED LOGGING FOR DEBUGGING ---
-        logger.info(`Processed ${orders.length} orders to be sent to frontend.`);
+        logger.info(`Successfully processed ${orders.length} orders by position.`);
         return orders;
 
     } catch (err) {
@@ -221,32 +214,22 @@ export const getOrders = async () => {
     }
 };
 
-// The appendOrder function remains the same as it is working correctly.
+// The appendOrder function is working correctly and remains unchanged.
 export const appendOrder = async (orderData) => {
     try {
         const sheets = getSheetsClient();
-        // The headers in the sheet must match this order
         const values = [
             [
-                orderData.orderId,
-                orderData.orderDate,
-                orderData.customerName,
-                orderData.customerPhone,
-                orderData.customerAddress,
-                JSON.stringify(orderData.items), // This column must be named "Product" in your sheet header
-                orderData.totalAmount,
-                orderData.language,
-                'Pending',
+                orderData.orderId, orderData.orderDate, orderData.customerName,
+                orderData.customerPhone, orderData.customerAddress, JSON.stringify(orderData.items),
+                orderData.totalAmount, orderData.language, 'Pending',
             ],
         ];
-
         await sheets.spreadsheets.values.append({
             spreadsheetId: SHEET_ID,
-            range: `${SHEET_NAME}!A:I`,
+            range: `${SHEET_NAME}!A1`, // Append starting at the first cell
             valueInputOption: 'USER_ENTERED',
-            resource: {
-                values: values,
-            },
+            resource: { values },
         });
     } catch (err) {
         logger.error(`Error appending to Google Sheet: ${err.message}`);
