@@ -788,10 +788,10 @@ import { ShoppingCart, User, Lock, Store, Zap, X, CheckCircle, Truck, RefreshCw,
 
 // --- Static Product Data (Initial State) ---
 const PRODUCTS_DATA = [
-  { id: 'aalu', name_en: 'Potato', name_hi: 'आलू', price: 20, unit: 'kg', image: '/images/patato.jpg' },
-  { id: 'piyaz', name_en: 'Onion', name_hi: 'प्याज़', price: 30, unit: 'kg', image: '/images/piyaz.jpg' },
-  { id: 'adrak', name_en: 'Ginger', name_hi: 'अदरक', price: 80, unit: 'kg', image: '/images/adrak.jpg' },
-  { id: 'lasun', name_en: 'Garlic', name_hi: 'लहसुन', price: 70, unit: 'kg', image: '/images/lasun.jpg' }
+  { id: 'aalu', name_en: 'Potato', name_hi: 'आलू', price: 20, unit: 'kg', image: '/images/potato.jpg' },
+  { id: 'piyaz', name_en: 'Onion', name_hi: 'प्याज़', price: 30, unit: 'kg', image: '/images/onion.jpg' },
+  { id: 'adrak', name_en: 'Ginger', name_hi: 'अदरक', price: 80, unit: 'kg', image: '/images/ginger.jpg' },
+  { id: 'lasun', name_en: 'Garlic', name_hi: 'लहसुन', price: 70, unit: 'kg', image: '/images/garlic.jpg' }
 ];
 
 // --- Localization Map (T) ---
