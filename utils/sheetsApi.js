@@ -15,7 +15,7 @@ if (!process.env.GOOGLE_SERVICE_ACCOUNT_KEY || !process.env.SHEET_ID) {
     // process.exit(1); 
 }
 
-const SHEET_ID = process.env.SHEET_ID;
+const SHEET_ID = process.env.SHEET_TAB_NAME;
 // Default to 'Sheet1' if SHEET_NAME is not provided, making it more robust
 const SHEET_NAME = process.env.SHEET_NAME || 'Sheet1'; 
 const KEY_FILE_PATH = path.resolve(__dirname, '..', process.env.GOOGLE_SERVICE_ACCOUNT_KEY);
