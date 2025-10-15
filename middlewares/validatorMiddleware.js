@@ -22,18 +22,6 @@ export const validateOrder = [
   // It now correctly checks for 'qty' instead of 'quantity'.
   body('items.*.qty', 'Item quantity must be a positive number.').isFloat({ gt: 0 }),
 ];
-```
 
-### Your Final Action Plan
-
-1.  In your project, navigate to the `middleware` folder.
-2.  Open the `validationMiddleware.js` file.
-3.  **Replace** its entire content with the code I've provided above.
-4.  **Save** the file.
-5.  **Commit and push** this final change to your GitHub repository.
-    ```bash
-    git add middleware/validationMiddleware.js
-    git commit -m "fix: Align order validation with frontend data schema"
-    git push origin main
     
 
