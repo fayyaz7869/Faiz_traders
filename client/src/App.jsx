@@ -14,15 +14,11 @@ import { ShoppingCart, User, Lock, Store, Zap, X, CheckCircle, Truck, RefreshCw,
 
 const PRODUCTS = [
 
-  // Added placeholder image URLs (using base64 for Aalu, URLs for others)
 
-  { id: 'aalu', name_en: 'Potato', name_hi: 'आलू', price: 20, unit: 'kg', image: 'data:image/jpeg;base64,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' },
-
-  { id: 'piyaz', name_en: 'Onion', name_hi: 'प्याज़', price: 30, unit: 'kg', image: 'https://placehold.co/100x100/800080/FFFFFF?text=Piyaz' },
-
-  { id: 'adrak', name_en: 'Ginger', name_hi: 'अदरक', price: 120, unit: 'kg', image: 'https://placehold.co/100x100/FFD700/000000?text=Adrak' },
-
-  { id: 'lasun', name_en: 'Garlic', name_hi: 'लहसुन', price: 150, unit: 'kg', image: 'https://placehold.co/100x100/FFFFFF/000000?text=Lasun' }
+  { id: 'aalu', name_en: 'Potato', name_hi: 'आलू', price: 20, unit: 'kg', image: '/images/potato.jpg'},
+  { id: 'piyaz', name_en: 'Onion', name_hi: 'प्याज़', price: 10, unit: 'kg', image: '/images/onion.jpg' },
+  { id: 'adrak', name_en: 'Ginger', name_hi: 'अदरक', price: 80, unit: 'kg', image: '/images/ginger.jpg' },
+  { id: 'lasun', name_en: 'Garlic', name_hi: 'लहसुन', price: 70, unit: 'kg', image: '/images/garlic.jpg' }
 
 ];
 
